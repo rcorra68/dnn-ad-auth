@@ -22,8 +22,7 @@ namespace Vvf.Auth.Dipvvf
 
         private void DisplayIpError(string strInvalidIP)
         {
-            string strError = $"{strInvalidIP} {Localization.GetString("InValidIPAddress", LocalResourceFile)}";
-            tblSettings.Visible = true;
+            string strError = string.Format("{0} {1}", strInvalidIP, Localization.GetString("InValidIPAddress", LocalResourceFile)); tblSettings.Visible = true;
             pnlError.Visible = true;
             lblError.Text = strError;
         }

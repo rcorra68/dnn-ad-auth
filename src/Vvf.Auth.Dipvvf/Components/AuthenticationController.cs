@@ -56,7 +56,8 @@ namespace Vvf.Auth.Dipvvf.Components
 
                     if (DotNetNuke.Common.Utilities.Config.GetSetting("PersistentCookieTimeout") != null)
                     {
-                        if (int.TryParse(DotNetNuke.Common.Utilities.Config.GetSetting("PersistentCookieTimeout"), out int persistentCookieTimeout) && persistentCookieTimeout != 0)
+                        int persistentCookieTimeout;
+                        if (int.TryParse(DotNetNuke.Common.Utilities.Config.GetSetting("PersistentCookieTimeout"), out persistentCookieTimeout) && persistentCookieTimeout != 0)
                         {
                             string authCookie = FormsAuthentication.FormsCookieName;
                             foreach (string cookie in HttpContext.Current.Response.Cookies)
@@ -83,7 +84,7 @@ namespace Vvf.Auth.Dipvvf.Components
                 }
             }
 
-            string querystringparams = $"logon={DateTime.Now.Ticks}";
+            string querystringparams = string.Format("logon={0}", DateTime.Now.Ticks);
             string strUrl = Globals.NavigateURL(_portalSettings.ActiveTab.TabID, string.Empty, querystringparams);
 
             HttpCookie dnnReturnToCookie = HttpContext.Current.Request.Cookies["DNNReturnTo"];
@@ -139,7 +140,7 @@ namespace Vvf.Auth.Dipvvf.Components
             {
                 MembershipUser aspNetUser = Membership.GetUser(objUser.Username);
                 string strPassword = Membership.Provider.EnablePasswordRetrieval && Membership.Provider.PasswordFormat != MembershipPasswordFormat.Hashed
-                    ? RandomizePassword(aspNetUser, objUser, aspNetUser?.GetPassword())
+                    ? RandomizePassword(aspNetUser, objUser, aspNetUser != null ? aspNetUser.GetPassword() : string.Empty)
                     : RandomizePassword(aspNetUser, objUser, string.Empty);
 
                 if (!objUser.IsDeleted)
@@ -278,7 +279,7 @@ namespace Vvf.Auth.Dipvvf.Components
 
             if (Membership.Provider.EnablePasswordRetrieval && Membership.Provider.PasswordFormat != MembershipPasswordFormat.Hashed)
             {
-                strStoredPassword = aspNetUser?.GetPassword();
+                strStoredPassword = aspNetUser != null ? aspNetUser.GetPassword() : string.Empty;
             }
 
             if (strStoredPassword == strPassword || string.IsNullOrEmpty(strStoredPassword))
@@ -366,7 +367,7 @@ namespace Vvf.Auth.Dipvvf.Components
 
         public static AuthenticationStatus GetStatus(int portalId)
         {
-            string authCookies = $"{ADConfiguration.AUTHENTICATION_STATUS_KEY}.{portalId}";
+            string authCookies = string.Format("{0}.{1}", ADConfiguration.AUTHENTICATION_STATUS_KEY, portalId);
             try
             {
                 HttpCookie cookie = HttpContext.Current.Request.Cookies[authCookies];
@@ -385,7 +386,7 @@ namespace Vvf.Auth.Dipvvf.Components
 
         public static void SetStatus(int portalId, AuthenticationStatus status)
         {
-            string authCookies = $"{ADConfiguration.AUTHENTICATION_STATUS_KEY}.{portalId}";
+            string authCookies = string.Format("{0}.{1}", ADConfiguration.AUTHENTICATION_STATUS_KEY, portalId);
             HttpRequest request = HttpContext.Current.Request;
             HttpResponse response = HttpContext.Current.Response;
             int nTimeOut = GetAuthCookieTimeout();

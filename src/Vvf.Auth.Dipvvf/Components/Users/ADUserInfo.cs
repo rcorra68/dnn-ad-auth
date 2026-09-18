@@ -17,22 +17,37 @@ namespace Vvf.Auth.Dipvvf.Components.Users
 
     public class ADUserInfo : UserInfo, IAuthenticationObjectBase
     {
-        public ADUserInfo()
-        {
-        }
-
         public bool IsNotSimplyUser { get; set; }
 
-        public string Name => SAMAccountName;
+        public string Name
+        {
+            get
+            {
+                return SAMAccountName;
+            }
+        }
 
-        public ObjectClass ObjectClass => ObjectClass.Person;
+        public ObjectClass ObjectClass
+        {
+            get
+            {
+                return ObjectClass.Person;
+            }
+        }
 
         public bool AuthenticationExists { get; set; }
 
-        public string CName { get; set; } = string.Empty;
+        public string CName { get; set; }
 
-        public string DistinguishedName { get; set; } = string.Empty;
+        public string DistinguishedName { get; set; }
 
-        public string SAMAccountName { get; set; } = string.Empty;
+        public string SAMAccountName { get; set; }
+
+        public ADUserInfo()
+        {
+            CName = string.Empty;
+            DistinguishedName = string.Empty;
+            SAMAccountName = string.Empty;
+        }
     }
 }

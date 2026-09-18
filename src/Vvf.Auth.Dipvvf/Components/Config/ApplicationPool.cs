@@ -13,7 +13,13 @@ namespace Vvf.Auth.Dipvvf.Components.Config
 {
     public class ApplicationPool
     {
-        public string DotNetVersion { get; set; } = "v2.0.50727";
-        public string Name { get; set; } = string.Empty;
+        public string DotNetVersion { get; set; }
+        public string Name { get; set; }
+
+        public ApplicationPool()
+        {
+            DotNetVersion = "v2.0.50727";
+            Name = string.Empty;
+        }
     }
 }

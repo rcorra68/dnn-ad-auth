@@ -1,0 +1,61 @@
+﻿<dotnetnuke type="Package" version="5.0">
+  <packages>
+    <package name="__MODULE__" type="Module" version="__VERSION__">
+      <friendlyName>__MODULE__</friendlyName>
+      <description>__DESCRIPTION__</description>
+      <iconFile>Images/Vvf32x32.png</iconFile>
+      
+      <owner>
+        <name>__OWNER__</name>
+        <organization>__ORG__</organization>
+        <url>__URL__</url>
+        <email>__EMAIL__</email>
+      </owner>
+      
+      <license src="Documentation/License.txt"></license>
+      <releaseNotes src="Documentation/ReleaseNotes.html"></releaseNotes>
+      
+      <dependencies>
+        <dependency type="CoreVersion">__CORE__</dependency>
+        __OTHER_DEPS__
+      </dependencies>
+
+      <components>
+      
+        <component type="Script">
+          __SCRIPTS__
+        </component>  
+
+        <component type="ResourceFile">
+          <resourceFiles>
+            <basePath>DesktopModules\__MODULE__</basePath>
+            <resourceFile>
+              <name>resources.zip</name>
+            </resourceFile>
+          </resourceFiles>
+        </component>
+
+        <component type="Module">
+          <desktopModule>
+            <moduleName>__MODULE__</moduleName>
+            <foldername>__MODULE__</foldername>
+            <businessControllerClass>Vvf.Modules.__MODULE__.Web.Components.FeatureController,Vvf.Modules.__MODULE__</businessControllerClass>
+            <supportedFeatures>
+              <supportedFeature type="Portable" />
+            </supportedFeatures>
+            <moduleDefinitions>
+              __MODULES__
+            </moduleDefinitions>
+          </desktopModule>
+        </component>
+        
+        <component type="Assembly">
+          <assemblies>
+            __ASSEMBLIES__
+          </assemblies>
+        </component>
+
+      </components>
+    </package>
+  </packages>
+</dotnetnuke>

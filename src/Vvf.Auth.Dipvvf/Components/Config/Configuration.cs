@@ -173,7 +173,7 @@ namespace Vvf.Auth.Dipvvf.Components.Config
             try
             {
                 PortalSettings portalSettings = PortalController.Instance.GetCurrentPortalSettings();
-                string strKey = $"{AUTHENTICATION_CONFIG_CACHE_PREFIX}.{portalSettings.PortalId}";
+                string strKey = string.Format("{0}.{1}", AUTHENTICATION_CONFIG_CACHE_PREFIX, portalSettings.PortalId);
 
                 config = (Configuration)DataCache.GetCache(strKey);
 
@@ -194,10 +194,10 @@ namespace Vvf.Auth.Dipvvf.Components.Config
         public static void ResetConfig()
         {
             PortalSettings portalSettings = PortalController.Instance.GetCurrentPortalSettings();
-            string strKey = $"{AUTHENTICATION_CONFIG_CACHE_PREFIX}.{portalSettings.PortalId}";
+            string strKey = string.Format("{0}.{1}", AUTHENTICATION_CONFIG_CACHE_PREFIX, portalSettings.PortalId);
             DataCache.RemoveCache(strKey);
 
-            strKey = $"AuthenticationProvider{portalSettings.PortalId}";
+            strKey = string.Format("AuthenticationProvider{0}", portalSettings.PortalId);
             DataCache.RemoveCache(strKey);
         }
 
@@ -244,9 +244,21 @@ namespace Vvf.Auth.Dipvvf.Components.Config
             }
         }
 
-        public static string DefaultProviderTypeName => "DotNetNuke.Authentication.ActiveDirectory.ADSI.ADSIProvider, DotNetNuke.Authentication.ActiveDirectory";
+        public static string DefaultProviderTypeName
+        {
+            get
+            {
+                return "DotNetNuke.Authentication.ActiveDirectory.ADSI.ADSIProvider, DotNetNuke.Authentication.ActiveDirectory";
+            }
+        }
 
-        public static string DefaultAuthenticationType => "Delegation";
+        public static string DefaultAuthenticationType
+        {
+            get
+            {
+                return "Delegation";
+            }
+        }
 
         public static string DefaultEmailDomain
         {
@@ -269,38 +281,140 @@ namespace Vvf.Auth.Dipvvf.Components.Config
             }
         }
 
-        public bool WindowsAuthentication => _windowsAuthentication;
+        public bool WindowsAuthentication
+        {
+            get
+            {
+                return _windowsAuthentication;
+            }
+        }
 
-        public bool HideWindowsLogin => _hideWindowsLogin;
+        public bool HideWindowsLogin
+        {
+            get
+            {
+                return _hideWindowsLogin;
+            }
+        }
 
-        public string RootDomain => _rootDomain;
+        public string RootDomain
+        {
+            get
+            {
+                return _rootDomain;
+            }
+        }
 
-        public string UserName => _userName;
+        public string UserName
+        {
+            get
+            {
+                return _userName;
+            }
+        }
 
-        public string Password => _password;
+        public string Password
+        {
+            get
+            {
+                return _password;
+            }
+        }
 
-        public bool SynchronizeRole => _synchronizeRole;
+        public bool SynchronizeRole
+        {
+            get
+            {
+                return _synchronizeRole;
+            }
+        }
 
-        public bool SynchronizePassword => _synchronizePassword;
+        public bool SynchronizePassword
+        {
+            get
+            {
+                return _synchronizePassword;
+            }
+        }
 
-        public bool StripDomainName => _stripDomainName;
+        public bool StripDomainName
+        {
+            get
+            {
+                return _stripDomainName;
+            }
+        }
 
-        public int PortalId => _portalId;
+        public int PortalId
+        {
+            get
+            {
+                return _portalId;
+            }
+        }
 
-        public string ProviderTypeName => _providerTypeName;
+        public string ProviderTypeName
+        {
+            get
+            {
+                return _providerTypeName;
+            }
+        }
 
-        public string AuthenticationType => _authenticationType;
+        public string AuthenticationType
+        {
+            get
+            {
+                return _authenticationType;
+            }
+        }
 
-        public string EmailDomain => _emailDomain;
+        public string EmailDomain
+        {
+            get
+            {
+                return _emailDomain;
+            }
+        }
 
-        public string Bots => _bots;
+        public string Bots
+        {
+            get
+            {
+                return _bots;
+            }
+        }
 
-        public string AutoIP => _autoIP;
+        public string AutoIP
+        {
+            get
+            {
+                return _autoIP;
+            }
+        }
 
-        public bool AutoCreateUsers => _autoCreateUsers;
+        public bool AutoCreateUsers
+        {
+            get
+            {
+                return _autoCreateUsers;
+            }
+        }
 
-        public string DefaultDomain => _defaultDomain;
+        public string DefaultDomain
+        {
+            get
+            {
+                return _defaultDomain;
+            }
+        }
 
-        public bool Photo => _photo;
+        public bool Photo
+        {
+            get
+            {
+                return _photo;
+            }
+        }
     }
 }
