@@ -126,7 +126,6 @@ namespace Vvf.Auth.Dipvvf.Providers.ADSIProvider
         private const string ADSI_CONFIG_CACHE_PREFIX = "ADSI.Configuration";
 
         private int _portalId;
-        private int _settingModuleId;
 
         // mRootDomainPath will be stored in DC=ttt,DC=com,DC=vn format (without ADSIPath)
         // ADSIPath to be added depends on Authentication accessing method
@@ -141,8 +140,6 @@ namespace Vvf.Auth.Dipvvf.Providers.ADSIProvider
         private AuthenticationTypes _authenticationType = AuthenticationTypes.Delegation;
         private string _userName = "";
         private string _password = "";
-        private int _searchPageSize = 1000;
-        private Path _adsiPath = Path.GC;
         private string _processLog = "";
 
         // For Domain Reference Configuration
