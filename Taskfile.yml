@@ -1,0 +1,35 @@
+version: '3'
+
+tasks:
+
+  build:
+    desc: "Build DNN module"
+    cmds:
+      - pwsh -ExecutionPolicy Bypass -File scripts/build.ps1
+
+  package:
+    desc: "Package DNN module"
+    # deps: [build]
+    cmds:
+      - pwsh -ExecutionPolicy Bypass -File scripts/package.ps1
+
+  bump:
+    desc: "Conventional Commits → SemVer + CHANGELOG.md"
+    cmds:
+      - pwsh -ExecutionPolicy Bypass -File scripts/bump-version.ps1
+
+  fix:
+    desc: "Fix Old CHANGELOG.md"
+    cmds:
+      - pwsh -ExecutionPolicy Bypass -File scripts/fix-old-changelog.ps1
+
+  update-common:
+    desc: "Aggiorna riferimento a Vvf.Modules.Common all'ultima versione"
+    cmds:
+      - pwsh -ExecutionPolicy Bypass -File scripts/update-common.ps1
+
+  release:
+    desc: "Bump + build in sequenza"
+    cmds:
+      - task: bump
+      - task: build

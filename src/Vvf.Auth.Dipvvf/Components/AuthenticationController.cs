@@ -1,30 +1,24 @@
-﻿// DotNetNuke® - http://www.dotnetnuke.com
-// Copyright (c) 2002-2013 by DotNetNuke Corporation
-//
-// Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated 
-// documentation files (the "Software"), to deal in the Software without restriction, including without limitation 
-// the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and 
-// to permit persons to whom the Software is furnished to do so, subject to the following conditions:
-//
-// The above copyright notice and this permission notice shall be included in all copies or substantial portions 
-// of the Software.
+﻿using System;
+using System.Web;
+using System.Web.Security;
+using System.Xml;
+using System.Xml.XPath;
+using DotNetNuke.Common;
+using DotNetNuke.Common.Utilities;
+using DotNetNuke.Entities.Modules;
+using DotNetNuke.Entities.Portals;
+using DotNetNuke.Entities.Users;
+using DotNetNuke.Security.Membership;
+using DotNetNuke.Services.Log.EventLog;
+using Vvf.Auth.Dipvvf.Components.Common;
+using Vvf.Auth.Dipvvf.Components.Users;
+using DNNUserController = DotNetNuke.Entities.Users.UserController;
+using ADConfiguration = Vvf.Auth.Dipvvf.Components.Config.Configuration;
+using ADUserController = Vvf.Auth.Dipvvf.Components.Users.UserController;
+using Vvf.Auth.Dipvvf.Providers.ADSIProvider;
 
-namespace DotNetNuke.Authentication.ActiveDirectory
+namespace Vvf.Auth.Dipvvf.Components
 {
-    using System;
-    using System.Web;
-    using System.Web.Security;
-    using System.Xml;
-    using System.Xml.XPath;
-    using DotNetNuke.Common;
-    using DotNetNuke.Common.Utilities;
-    using DotNetNuke.Entities.Modules;
-    using DotNetNuke.Entities.Portals;
-    using DotNetNuke.Entities.Users;
-    using DotNetNuke.Security.Membership;
-    using DotNetNuke.Services.Log.EventLog;
-    using DNNUserController = DotNetNuke.Entities.Users.UserController;
-
     public class AuthenticationController : UserUserControlBase
     {
         private readonly string _mProviderTypeName = string.Empty;
@@ -32,37 +26,37 @@ namespace DotNetNuke.Authentication.ActiveDirectory
 
         public AuthenticationController()
         {
-            Configuration config = Configuration.GetConfig();
+            ADConfiguration config = ADConfiguration.GetConfig();
             _portalSettings = PortalController.Instance.GetCurrentPortalSettings();
             _mProviderTypeName = config.ProviderTypeName;
         }
 
         public void AuthenticationLogon()
         {
-            var objAuthUserController = new UserController();
-            string loggedOnUserName = HttpContext.Current.Request.ServerVariables[Configuration.LOGON_USER_VARIABLE];
+            var adUserController = new ADUserController();
+            string loggedOnUserName = HttpContext.Current.Request.ServerVariables[ADConfiguration.LOGON_USER_VARIABLE];
             UserLoginStatus loginStatus = UserLoginStatus.LOGIN_FAILURE;
 
             string ipAddress = HttpContext.Current.Request.UserHostAddress ?? string.Empty;
 
             if (!string.IsNullOrEmpty(loggedOnUserName))
             {
-                ADUserInfo objAuthUser = objAuthUserController.GetUser(loggedOnUserName);
+                ADUserInfo adUserInfo = adUserController.GetUser(loggedOnUserName);
                 UserInfo objUser = DNNUserController.GetUserByName(_portalSettings.PortalId, loggedOnUserName);
 
-                UserInfo objReturnUser = AuthenticateUser(objUser, objAuthUser, ref loginStatus, ipAddress);
+                UserInfo objReturnUser = AuthenticateUser(objUser, adUserInfo, ref loginStatus, ipAddress);
 
                 if (objReturnUser != null)
                 {
-                    objAuthUser.LastIPAddress = ipAddress;
-                    UpdateDNNUser(objReturnUser, objAuthUser);
+                    adUserInfo.LastIPAddress = ipAddress;
+                    UpdateDNNUser(objReturnUser, adUserInfo);
 
                     FormsAuthentication.SetAuthCookie(loggedOnUserName, true);
                     SetStatus(_portalSettings.PortalId, AuthenticationStatus.WinLogon);
 
-                    if (Config.GetSetting("PersistentCookieTimeout") != null)
+                    if (DotNetNuke.Common.Utilities.Config.GetSetting("PersistentCookieTimeout") != null)
                     {
-                        if (int.TryParse(Config.GetSetting("PersistentCookieTimeout"), out int persistentCookieTimeout) && persistentCookieTimeout != 0)
+                        if (int.TryParse(DotNetNuke.Common.Utilities.Config.GetSetting("PersistentCookieTimeout"), out int persistentCookieTimeout) && persistentCookieTimeout != 0)
                         {
                             string authCookie = FormsAuthentication.FormsCookieName;
                             foreach (string cookie in HttpContext.Current.Response.Cookies)
@@ -112,7 +106,7 @@ namespace DotNetNuke.Authentication.ActiveDirectory
         public UserInfo ManualLogon(string userName, string strPassword, ref UserLoginStatus loginStatus, string ipAddress)
         {
             ADUserInfo objAuthUser = ProcessFormAuthentication(userName, strPassword);
-            Configuration config = Configuration.GetConfig();
+            ADConfiguration config = ADConfiguration.GetConfig();
             UserInfo objReturnUser = null;
 
             if (!string.IsNullOrEmpty(userName) && objAuthUser != null)
@@ -138,13 +132,13 @@ namespace DotNetNuke.Authentication.ActiveDirectory
 
         public UserInfo AuthenticateUser(UserInfo objUser, ADUserInfo objAuthUser, ref UserLoginStatus loginStatus, string ipAddress)
         {
-            Configuration config = Configuration.GetConfig();
+            ADConfiguration config = ADConfiguration.GetConfig();
             UserInfo objReturnUser = null;
 
             if (objUser != null)
             {
                 MembershipUser aspNetUser = Membership.GetUser(objUser.Username);
-                string strPassword = (Membership.Provider.EnablePasswordRetrieval && Membership.Provider.PasswordFormat != MembershipPasswordFormat.Hashed)
+                string strPassword = Membership.Provider.EnablePasswordRetrieval && Membership.Provider.PasswordFormat != MembershipPasswordFormat.Hashed
                     ? RandomizePassword(aspNetUser, objUser, aspNetUser?.GetPassword())
                     : RandomizePassword(aspNetUser, objUser, string.Empty);
 
@@ -248,8 +242,8 @@ namespace DotNetNuke.Authentication.ActiveDirectory
             if (!string.IsNullOrEmpty(objAuthUser.Profile.Website)) objReturnUser.Profile.Website = objAuthUser.Profile.Website;
             if (!string.IsNullOrEmpty(objAuthUser.Profile.Photo)) objReturnUser.Profile.Photo = objAuthUser.Profile.Photo;
 
-            var objAuthUserController = new UserController();
-            objAuthUserController.UpdateDnnUser(objReturnUser);
+            var adUserController = new ADUserController();
+            adUserController.UpdateDnnUser(objReturnUser);
         }
 
         private void CreateUser(UserInfo objUser, ref UserLoginStatus loginStatus)
@@ -267,7 +261,7 @@ namespace DotNetNuke.Authentication.ActiveDirectory
             OnUserCreated(args);
             OnUserCreateCompleted(args);
 
-            loginStatus = (createStatus == UserCreateStatus.Success || createStatus == UserCreateStatus.UserAlreadyRegistered)
+            loginStatus = createStatus == UserCreateStatus.Success || createStatus == UserCreateStatus.UserAlreadyRegistered
                 ? UserLoginStatus.LOGIN_SUCCESS
                 : UserLoginStatus.LOGIN_FAILURE;
         }
@@ -327,22 +321,22 @@ namespace DotNetNuke.Authentication.ActiveDirectory
 
         public ADUserInfo ProcessFormAuthentication(string loggedOnUserName, string loggedOnPassword)
         {
-            Configuration config = Configuration.GetConfig();
+            ADConfiguration config = ADConfiguration.GetConfig();
             if (config.WindowsAuthentication)
             {
                 string userName = config.StripDomainName
                     ? Utilities.TrimUserDomainName(loggedOnUserName)
                     : loggedOnUserName;
 
-                var objAuthUserController = new UserController();
-                return objAuthUserController.GetUser(userName, loggedOnPassword);
+                var adUserController = new ADUserController();
+                return adUserController.GetUser(userName, loggedOnPassword);
             }
             return null;
         }
 
         public UserInfo GetDnnUser(int portalId, string loggedOnUserName)
         {
-            Configuration config = Configuration.GetConfig();
+            ADConfiguration config = ADConfiguration.GetConfig();
             string userName = config.StripDomainName
                 ? Utilities.TrimUserDomainName(loggedOnUserName)
                 : loggedOnUserName;
@@ -372,7 +366,7 @@ namespace DotNetNuke.Authentication.ActiveDirectory
 
         public static AuthenticationStatus GetStatus(int portalId)
         {
-            string authCookies = $"{Configuration.AUTHENTICATION_STATUS_KEY}.{portalId}";
+            string authCookies = $"{ADConfiguration.AUTHENTICATION_STATUS_KEY}.{portalId}";
             try
             {
                 HttpCookie cookie = HttpContext.Current.Request.Cookies[authCookies];
@@ -391,7 +385,7 @@ namespace DotNetNuke.Authentication.ActiveDirectory
 
         public static void SetStatus(int portalId, AuthenticationStatus status)
         {
-            string authCookies = $"{Configuration.AUTHENTICATION_STATUS_KEY}.{portalId}";
+            string authCookies = $"{ADConfiguration.AUTHENTICATION_STATUS_KEY}.{portalId}";
             HttpRequest request = HttpContext.Current.Request;
             HttpResponse response = HttpContext.Current.Response;
             int nTimeOut = GetAuthCookieTimeout();
@@ -426,27 +420,27 @@ namespace DotNetNuke.Authentication.ActiveDirectory
         [Obsolete("procedure obsoleted in 5.0.3 - use SynchronizeRoles(UserInfo objUser) instead")]
         public void SynchronizeRoles(string loggedOnUserName, int intUserId)
         {
-            var objAuthUserController = new UserController();
-            ADUserInfo objAuthUser = objAuthUserController.GetUser(loggedOnUserName);
+            var adUserController = new ADUserController();
+            ADUserInfo objAuthUser = adUserController.GetUser(loggedOnUserName);
 
             if (objAuthUser.IsNotSimplyUser)
             {
                 objAuthUser.UserID = intUserId;
-                UserController.AddUserRoles(_portalSettings.PortalId, objAuthUser);
-                objAuthUserController.UpdateDnnUser(objAuthUser);
+                ADUserController.AddUserRoles(_portalSettings.PortalId, objAuthUser);
+                adUserController.UpdateDnnUser(objAuthUser);
             }
         }
 
         public void SynchronizeRoles(UserInfo objUser)
         {
-            var objAuthUserController = new UserController();
-            ADUserInfo objAuthUser = objAuthUserController.GetUser(objUser.Username);
+            var adUserController = new ADUserController();
+            ADUserInfo objAuthUser = adUserController.GetUser(objUser.Username);
             objAuthUser.IsSuperUser = objUser.IsSuperUser;
 
             if (objAuthUser.IsNotSimplyUser)
             {
                 objAuthUser.UserID = objUser.UserID;
-                UserController.AddUserRoles(_portalSettings.PortalId, objAuthUser);
+                ADUserController.AddUserRoles(_portalSettings.PortalId, objAuthUser);
             }
         }
 
@@ -462,7 +456,7 @@ namespace DotNetNuke.Authentication.ActiveDirectory
 
         public static int GetAuthCookieTimeout()
         {
-            XmlDocument configDoc = Config.Load();
+            XmlDocument configDoc = DotNetNuke.Common.Utilities.Config.Load();
             XPathNavigator formsNav = configDoc.CreateNavigator().SelectSingleNode("configuration/system.web/authentication/forms")
                                       ?? configDoc.CreateNavigator().SelectSingleNode("configuration/location/system.web/authentication/forms");
 

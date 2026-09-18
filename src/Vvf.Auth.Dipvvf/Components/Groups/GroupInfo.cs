@@ -9,10 +9,12 @@
 // The above copyright notice and this permission notice shall be included in all copies or substantial portions 
 // of the Software.
 
-namespace DotNetNuke.Authentication.ActiveDirectory
+using System.Collections;
+using DotNetNuke.Security.Roles;
+using Vvf.Auth.Dipvvf.Components.Common;
+
+namespace Vvf.Auth.Dipvvf.Components.Groups
 {
-    using System.Collections;
-    using DotNetNuke.Security.Roles;
 
     public class GroupInfo : RoleInfo, IAuthenticationObjectBase
     {

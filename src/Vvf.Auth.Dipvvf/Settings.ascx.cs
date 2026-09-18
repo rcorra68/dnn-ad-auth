@@ -1,17 +1,19 @@
-namespace DotNetNuke.Authentication.ActiveDirectory
-{
-    using System;
-    using System.Collections;
-    using System.Web;
-    using System.Web.UI.WebControls;
-    using DotNetNuke.Authentication.ActiveDirectory.ADSI;
-    using DotNetNuke.Entities.Portals;
-    using DotNetNuke.Framework.Providers;
-    using DotNetNuke.Services.Authentication;
-    using DotNetNuke.Services.Exceptions;
-    using DotNetNuke.Services.Localization;
-    using DotNetNuke.UI.Skins.Controls;
+using DotNetNuke.Entities.Portals;
+using DotNetNuke.Framework.Providers;
+using DotNetNuke.Services.Authentication;
+using DotNetNuke.Services.Exceptions;
+using DotNetNuke.Services.Localization;
+using DotNetNuke.UI.Skins;
+using DotNetNuke.UI.Skins.Controls;
+using System;
+using System.Collections;
+using System.Web;
+using System.Web.UI.WebControls;
+using Vvf.Auth.Dipvvf.Providers.ADSIProvider;
+using ADConfiguration = Vvf.Auth.Dipvvf.Components.Config.Configuration;
 
+namespace Vvf.Auth.Dipvvf
+{
     public partial class Settings : AuthenticationSettingsBase
     {
         private string _strError = string.Empty;
@@ -116,8 +118,8 @@ namespace DotNetNuke.Authentication.ActiveDirectory
             {
                 if (!chkAuthentication.Checked)
                 {
-                    Configuration.UpdateConfig(portalSettings.PortalId, false, false, "", "", "", "", false, false, false, "", "", "", "", false, "", false);
-                    Configuration.ResetConfig();
+                    ADConfiguration.UpdateConfig(portalSettings.PortalId, false, false, "", "", "", "", false, false, false, "", "", "", "", false, "", false);
+                    ADConfiguration.ResetConfig();
                 }
                 else
                 {
@@ -134,7 +136,7 @@ namespace DotNetNuke.Authentication.ActiveDirectory
 
                     if (chkAuthentication.Checked && !chkHidden.Checked)
                     {
-                        Configuration.UpdateConfig(
+                        ADConfiguration.UpdateConfig(
                             portalSettings.PortalId,
                             chkAuthentication.Checked,
                             chkHidden.Checked,
@@ -155,7 +157,7 @@ namespace DotNetNuke.Authentication.ActiveDirectory
                     }
                     else
                     {
-                        Configuration.UpdateConfig(
+                        ADConfiguration.UpdateConfig(
                             portalSettings.PortalId,
                             false,
                             chkHidden.Checked,
@@ -175,17 +177,17 @@ namespace DotNetNuke.Authentication.ActiveDirectory
                             chkSynchronizePhoto.Checked);
                     }
 
-                    Configuration.ResetConfig();
-                    var objAuthenticationController = new AuthenticationController();
-                    string statusMessage = objAuthenticationController.NetworkStatus;
+                    ADConfiguration.ResetConfig();
+                    var authenticationController = new Vvf.Auth.Dipvvf.Components.AuthenticationController();
+                    string statusMessage = authenticationController.NetworkStatus();
 
                     if (statusMessage.ToLower().Contains("fail"))
                     {
-                        MessageCell.Controls.Add(Skins.Skin.GetModuleMessageControl("", LocalizedStatus(statusMessage), ModuleMessage.ModuleMessageType.RedError));
+                        MessageCell.Controls.Add(Skin.GetModuleMessageControl("", LocalizedStatus(statusMessage), ModuleMessage.ModuleMessageType.RedError));
                     }
                     else
                     {
-                        MessageCell.Controls.Add(Skins.Skin.GetModuleMessageControl("", LocalizedStatus(statusMessage), ModuleMessage.ModuleMessageType.GreenSuccess));
+                        MessageCell.Controls.Add(Skin.GetModuleMessageControl("", LocalizedStatus(statusMessage), ModuleMessage.ModuleMessageType.GreenSuccess));
                     }
                 }
             }
@@ -201,19 +203,19 @@ namespace DotNetNuke.Authentication.ActiveDirectory
 
         protected void Page_Init(object sender, EventArgs e)
         {
-            var objAuthenticationController = new AuthenticationController();
-            ProviderConfiguration objProviderConfiguration = ProviderConfiguration.GetProviderConfiguration(Configuration.AUTHENTICATION_KEY);
+            var authenticationController = new Components.AuthenticationController();
+            ProviderConfiguration providerConfiguration = ProviderConfiguration.GetProviderConfiguration(ADConfiguration.AUTHENTICATION_KEY);
 
-            foreach (DictionaryEntry objProvider in objProviderConfiguration.Providers)
+            foreach (DictionaryEntry provider in providerConfiguration.Providers)
             {
-                string providerName = (string)objProvider.Key;
-                string providerType = ((Provider)objProvider.Value).Type;
+                string providerName = (string)provider.Key;
+                string providerType = ((Provider)provider.Value).Type;
                 cboProviders.Items.Add(new ListItem(providerName, providerType));
             }
 
             try
             {
-                cboAuthenticationType.DataSource = objAuthenticationController.AuthenticationTypes;
+                cboAuthenticationType.DataSource = authenticationController.AuthenticationTypes();
             }
             catch (TypeInitializationException)
             {
@@ -236,8 +238,8 @@ namespace DotNetNuke.Authentication.ActiveDirectory
                 {
                     PortalSettings portalSettings = PortalController.Instance.GetCurrentPortalSettings();
 
-                    Configuration.ResetConfig();
-                    Configuration config = Configuration.GetConfig();
+                    ADConfiguration.ResetConfig();
+                    ADConfiguration config = ADConfiguration.GetConfig();
 
                     if (UserInfo.Username.IndexOf(@"\", StringComparison.Ordinal) > 0)
                     {

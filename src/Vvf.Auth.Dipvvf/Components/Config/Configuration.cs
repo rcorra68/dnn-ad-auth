@@ -9,7 +9,7 @@
 // The above copyright notice and this permission notice shall be included in all copies or substantial portions 
 // of the Software.
 
-namespace DotNetNuke.Authentication.ActiveDirectory
+namespace Vvf.Auth.Dipvvf.Components.Config
 {
     using System;
     using System.Collections.Generic;
@@ -17,6 +17,7 @@ namespace DotNetNuke.Authentication.ActiveDirectory
     using DotNetNuke.Entities.Portals;
     using DotNetNuke.Framework.Providers;
     using DotNetNuke.Security;
+    using Vvf.Auth.Dipvvf.Providers.ADSIProvider;
 
     public class Configuration
     {
@@ -162,7 +163,7 @@ namespace DotNetNuke.Authentication.ActiveDirectory
             }
             catch (Exception ex)
             {
-                ADSI.Utilities.AddEventLog(portalSettings, "There was a problem loading the settings for the AD Authentication Provider. Error: " + ex.Message);
+                Utilities.AddEventLog(portalSettings, "There was a problem loading the settings for the AD Authentication Provider. Error: " + ex.Message);
             }
         }
 
@@ -223,7 +224,7 @@ namespace DotNetNuke.Authentication.ActiveDirectory
 
             PortalController.UpdatePortalSetting(portalID, AD_WINDOWSAUTHENTICATION, windowsAuthentication.ToString());
             PortalController.UpdatePortalSetting(portalID, AD_HIDEWINDOWSLOGIN, hidden.ToString());
-            PortalController.UpdatePortalSetting(PortalID, AD_SYNCHRONIZEROLE, synchronizeRole.ToString());
+            PortalController.UpdatePortalSetting(portalID, AD_SYNCHRONIZEROLE, synchronizeRole.ToString());
             PortalController.UpdatePortalSetting(portalID, AD_SYNCHRONIZEPASSWORD, synchronizePassword.ToString());
             PortalController.UpdatePortalSetting(portalID, AD_STRIPDOMAINNAME, stripDomainName.ToString());
             PortalController.UpdatePortalSetting(portalID, AD_ROOTDOMAIN, string.IsNullOrEmpty(rootDomain) ? "" : rootDomain);

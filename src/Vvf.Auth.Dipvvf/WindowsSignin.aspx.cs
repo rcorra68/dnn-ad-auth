@@ -9,12 +9,13 @@
 // The above copyright notice and this permission notice shall be included in all copies or substantial portions 
 // of the Software.
 
-namespace DotNetNuke.Authentication.ActiveDirectory
-{
-    using System;
-    using System.Web.UI;
-    using DotNetNuke.Entities.Portals;
+using System;
+using System.Web.UI;
+using Vvf.Auth.Dipvvf.Components;
+using Vvf.Auth.Dipvvf.Components.Config;
 
+namespace Vvf.Auth.Dipvvf
+{
     public partial class WindowsSignin : Page
     {
         protected override void OnInit(EventArgs e)

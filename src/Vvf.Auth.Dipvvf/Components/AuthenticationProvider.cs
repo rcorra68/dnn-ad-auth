@@ -9,12 +9,15 @@
 // The above copyright notice and this permission notice shall be included in all copies or substantial portions 
 // of the Software.
 
-namespace DotNetNuke.Authentication.ActiveDirectory
+using DotNetNuke.Entities.Portals;
+using DotNetNuke.Framework;
+using System;
+using System.Collections;
+using Vvf.Auth.Dipvvf.Components.Config;
+using Vvf.Auth.Dipvvf.Components.Users;
+
+namespace Vvf.Auth.Dipvvf.Components
 {
-    using System;
-    using System.Collections;
-    using DotNetNuke.Entities.Portals;
-    using DotNetNuke.Framework;
 
     public abstract class AuthenticationProvider
     {

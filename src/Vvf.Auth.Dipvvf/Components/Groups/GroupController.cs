@@ -9,10 +9,11 @@
 // The above copyright notice and this permission notice shall be included in all copies or substantial portions 
 // of the Software.
 
-namespace DotNetNuke.Authentication.ActiveDirectory
-{
-    using System.Collections;
+using System.Collections;
+using Vvf.Auth.Dipvvf.Components.Config;
 
+namespace Vvf.Auth.Dipvvf.Components.Groups
+{
     public class GroupController
     {
         private readonly string _providerTypeName = string.Empty;

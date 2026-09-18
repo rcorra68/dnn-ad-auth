@@ -1,13 +1,16 @@
-using System;
-using System.Security.Permissions;
+using DotNetNuke.Common;
 using DotNetNuke.Common.Utilities;
 using DotNetNuke.Entities.Portals;
-using DotNetNuke.Entities.Users;
 using DotNetNuke.Security;
 using DotNetNuke.Security.Membership;
 using DotNetNuke.Services.Authentication;
 using DotNetNuke.Services.Localization;
 using DotNetNuke.Services.Log.EventLog;
+using System;
+using System.Security.Permissions;
+using System.Web;
+using Vvf.Auth.Dipvvf.Providers.ADSIProvider;
+using ADConfiguration = Vvf.Auth.Dipvvf.Components.Config.Configuration;
 using DNNUserInfo = DotNetNuke.Entities.Users.UserInfo;
 
 namespace Vvf.Auth.Dipvvf
@@ -16,50 +19,50 @@ namespace Vvf.Auth.Dipvvf
     {
         private readonly MembershipProvider _memberProvider = MembershipProvider.Instance();
 
-        #region Protected Properties
+        #region protected Properties
 
         /// <summary>
         /// Gets whether the Captcha control is used to validate the login.
         /// </summary>
-        Protected bool UseCaptcha
+        protected bool UseCaptcha
         {
-            Get
+            get
             {
                 Object setting = GetSetting(PortalId, "Security_CaptchaLogin");
-                Return setting != null && Convert.ToBoolean(setting);
+                return setting != null && Convert.ToBoolean(setting);
             }
         }
 
         /// <summary>
         /// Returns the username entered formatted to DOMAIN\User structure.
         /// </summary>
-        Protected string UserName
+        protected string UserName
         {
-            Get { return ResolveFormattedUserName(txtUsername.Text); }
-            Set { txtUsername.Text = value; }
+            get { return ResolveFormattedUserName(txtUsername.Text); }
+            set { txtUsername.Text = value; }
         }
 
         #endregion
 
-        #region Public Properties
+        #region public Properties
 
         /// <summary>
         /// Check if the Auth System is Enabled for the Portal.
         /// </summary>
-        Public override bool Enabled
+        public override bool Enabled
         {
-            Get
+            get
             {
-                Try
+                try
                 {
-                    Var hostingPermissions = new AspNetHostingPermission(PermissionState.Unrestricted);
-                    HostingPermissions.Demand();
+                    var hostingPermissions = new AspNetHostingPermission(PermissionState.Unrestricted);
+                    hostingPermissions.Demand();
 
-                    Return Configuration.GetConfig().WindowsAuthentication;
+                    return ADConfiguration.GetConfig().WindowsAuthentication;
                 }
-                Catch
+                catch
                 {
-                    Return false;
+                    return false;
                 }
             }
         }
@@ -68,74 +71,74 @@ namespace Vvf.Auth.Dipvvf
 
         #region Event Handlers
 
-        Protected void Page_Load(object sender, EventArgs e)
+        protected void Page_Load(object sender, EventArgs e)
         {
-            If (!Request.IsAuthenticated)
+            if (!Request.IsAuthenticated)
             {
-                If (!IsPostBack)
+                if (!IsPostBack)
                 {
-                    If (!string.IsNullOrEmpty(Request.QueryString["username"]))
+                    if (!string.IsNullOrEmpty(Request.QueryString["username"]))
                     {
-                        TxtUsername.Text = Request.QueryString["username"];
+                        txtUsername.Text = Request.QueryString["username"];
                     }
                 }
 
-                TxtPassword.Attributes.Add("value", txtPassword.Text);
+                txtPassword.Attributes.Add("value", txtPassword.Text);
 
-                Try
+                try
                 {
-                    If (string.IsNullOrEmpty(txtUsername.Text))
+                    if (string.IsNullOrEmpty(txtUsername.Text))
                     {
-                        SetFormFocus(txtUsername);
+                        Globals.SetFormFocus(txtUsername);
                     }
-                    Else
+                    else
                     {
-                        SetFormFocus(txtPassword);
+                        Globals.SetFormFocus(txtPassword);
                     }
                 }
-                Catch
+                catch
                 {
                     // Ignore focus setting failure when control rendering is delayed
                 }
             }
 
-            DivCaptcha1.Visible = UseCaptcha;
-            DivCaptcha2.Visible = UseCaptcha;
+            divCaptcha1.Visible = UseCaptcha;
+            divCaptcha2.Visible = UseCaptcha;
 
-            If (UseCaptcha)
+            if (UseCaptcha)
             {
-                CtlCaptcha.ErrorMessage = Localization.GetString("InvalidCaptcha", Localization.SharedResourceFile);
-                CtlCaptcha.Text = Localization.GetString("CaptchaText", Localization.SharedResourceFile);
+                ctlCaptcha.ErrorMessage = Localization.GetString("InvalidCaptcha", Localization.SharedResourceFile);
+                ctlCaptcha.Text = Localization.GetString("CaptchaText", Localization.SharedResourceFile);
             }
         }
 
-        Protected void cmdLogin_Click(object sender, EventArgs e)
+        protected void cmdLogin_Click(object sender, EventArgs e)
         {
-            If (UseCaptcha && !ctlCaptcha.IsValid)
+            if (UseCaptcha && !ctlCaptcha.IsValid)
             {
-                Return;
+                return;
             }
 
-            Var loginStatus = UserLoginStatus.LOGIN_FAILURE;
-            Var objAuthentication = new AuthenticationController();
+            var loginStatus = UserLoginStatus.LOGIN_FAILURE;
+            var objAuthentication = new Vvf.Auth.Dipvvf.Components.AuthenticationController();
             DNNUserInfo objUser = null;
 
-            Var formattedUsername = UserName;
+            var formattedUsername = UserName;
 
-            If (formattedUsername.Contains(@"\"))
+            if (formattedUsername.Contains(@"\"))
             {
-                ObjUser = objAuthentication.ManualLogon(formattedUsername, txtPassword.Text, ref loginStatus, IPAddress);
+                objUser = objAuthentication.ManualLogon(formattedUsername, txtPassword.Text, ref loginStatus, IPAddress);
             }
 
-            Bool authenticated = loginStatus != UserLoginStatus.LOGIN_FAILURE;
+            bool authenticated = loginStatus != UserLoginStatus.LOGIN_FAILURE;
             String message = Null.NullString;
 
-            If (objUser == null)
+            if (objUser == null)
             {
                 AddEventLog(PortalId, formattedUsername, Null.NullInteger, PortalSettings.PortalName, IPAddress, loginStatus);
             }
 
-            Var eventArgs = new UserAuthenticatedEventArgs(objUser, formattedUsername, loginStatus, "Active Directory")
+            var eventArgs = new UserAuthenticatedEventArgs(objUser, formattedUsername, loginStatus, "Active Directory")
             {
                 Authenticated = authenticated,
                 Message = message
@@ -146,71 +149,71 @@ namespace Vvf.Auth.Dipvvf
 
         #endregion
 
-        #region Private Methods
+        #region private Methods
 
         /// <summary>
         /// Normalizes raw input username (UPN or SAM) into standard DOMAIN\User format.
         /// </summary>
-        Private string ResolveFormattedUserName(string rawInput)
+        private string ResolveFormattedUserName(string rawInput)
         {
-            If (string.IsNullOrWhiteSpace(rawInput))
+            if (string.IsNullOrWhiteSpace(rawInput))
             {
-                Return string.Empty;
+                return string.Empty;
             }
 
-            Var config = Configuration.GetConfig();
+            var config = ADConfiguration.GetConfig();
             String defaultDomain = config.DefaultDomain ?? String.Empty;
 
             // Handle UPN format (user@domain.com)
-            If (rawInput.Contains("@"))
+            if (rawInput.Contains("@"))
             {
-                Return ADSI.Utilities.UPNToLogonName0(rawInput.ToLowerInvariant());
+                return Utilities.UPNToLogonName0(rawInput.ToLowerInvariant());
             }
 
             // Handle DOMAIN\User format
-            If (rawInput.Contains(@"\"))
+            if (rawInput.Contains(@"\"))
             {
                 String[] parts = rawInput.Split('\\');
                 String domain = parts[0].ToUpperInvariant();
                 String user = parts[1].ToUpperInvariant();
 
-                If (domain.Contains("."))
+                if (domain.Contains("."))
                 {
-                    Domain = ADSI.Utilities.CanonicalToNetBIOS(domain.ToLowerInvariant());
+                    domain = Utilities.CanonicalToNetBIOS(domain.ToLowerInvariant());
                 }
 
-                Return !string.IsNullOrEmpty(domain) ? string.Format(@"{0}\{1}", domain, user) : user;
+                return !string.IsNullOrEmpty(domain) ? string.Format(@"{0}\{1}", domain, user) : user;
             }
 
             // Fallback: Append default domain if specified
-            If (!string.IsNullOrEmpty(defaultDomain))
+            if (!string.IsNullOrEmpty(defaultDomain))
             {
                 String cleanDomain = defaultDomain.Trim().Replace(@"\", string.Empty);
-                Return string.Format(@"{0}\{1}", cleanDomain, rawInput);
+                return string.Format(@"{0}\{1}", cleanDomain, rawInput);
             }
 
-            Return rawInput;
+            return rawInput;
         }
 
-        Private static void AddEventLog(int portalId, string username, int userId, string portalName, string ip, UserLoginStatus loginStatus)
+        private static void AddEventLog(int portalId, string username, int userId, string portalName, string ip, UserLoginStatus loginStatus)
         {
-            Var objEventLog = new EventLogController();
-            Var objEventLogInfo = new LogInfo();
-            Var objSecurity = new PortalSecurity();
+            var eventLogController = new EventLogController();
+            var logInfo = new LogInfo();
+            var portalSecurity = new PortalSecurity();
 
-            ObjEventLogInfo.AddProperty("IP", ip);
-            ObjEventLogInfo.LogPortalID = portalId;
-            ObjEventLogInfo.LogPortalName = portalName;
-            ObjEventLogInfo.LogUserName = objSecurity.InputFilter(
-                Username,
+            logInfo.AddProperty("IP", ip);
+            logInfo.LogPortalID = portalId;
+            logInfo.LogPortalName = portalName;
+            logInfo.LogUserName = portalSecurity.InputFilter(
+                username,
                 PortalSecurity.FilterFlag.NoScripting |
                 PortalSecurity.FilterFlag.NoAngleBrackets |
                 PortalSecurity.FilterFlag.NoMarkup
             );
-            ObjEventLogInfo.LogUserID = userId;
-            ObjEventLogInfo.LogTypeKey = loginStatus.ToString();
+            logInfo.LogUserID = userId;
+            logInfo.LogTypeKey = loginStatus.ToString();
 
-            ObjEventLog.AddLog(objEventLogInfo);
+            eventLogController.AddLog(logInfo);
         }
 
         #endregion

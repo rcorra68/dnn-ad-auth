@@ -9,11 +9,30 @@
 // The above copyright notice and this permission notice shall be included in all copies or substantial portions 
 // of the Software.
 
-namespace Vvf.Auth.Dipvvf.Components.Config
+namespace Vvf.Auth.Dipvvf.Components.Users
 {
-    public class ApplicationPool
+    using DotNetNuke.Entities.Users;
+    using Vvf.Auth.Dipvvf.Components;
+    using Vvf.Auth.Dipvvf.Components.Common;
+
+    public class ADUserInfo : UserInfo, IAuthenticationObjectBase
     {
-        public string DotNetVersion { get; set; } = "v2.0.50727";
-        public string Name { get; set; } = string.Empty;
+        public ADUserInfo()
+        {
+        }
+
+        public bool IsNotSimplyUser { get; set; }
+
+        public string Name => SAMAccountName;
+
+        public ObjectClass ObjectClass => ObjectClass.Person;
+
+        public bool AuthenticationExists { get; set; }
+
+        public string CName { get; set; } = string.Empty;
+
+        public string DistinguishedName { get; set; } = string.Empty;
+
+        public string SAMAccountName { get; set; } = string.Empty;
     }
 }
