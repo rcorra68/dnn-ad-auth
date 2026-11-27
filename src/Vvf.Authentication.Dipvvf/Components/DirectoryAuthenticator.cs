@@ -1,7 +1,9 @@
 namespace Vvf.Authentication.Dipvvf.Components
 {
     using System;
+    using System.DirectoryServices;
     using System.DirectoryServices.AccountManagement;
+    using System.Text;
     using DotNetNuke.Instrumentation;
 
     public enum DirectoryAuthenticationStatus
@@ -39,7 +41,8 @@ namespace Vvf.Authentication.Dipvvf.Components
 
     /// <summary>
     /// Validates credentials against Active Directory using the user principal
-    /// name (accountName@domain), then reads the sAMAccountName of that user.
+    /// name (accountName@domain), then reads the sAMAccountName of that user
+    /// from the Global Catalog.
     /// </summary>
     public class DirectoryAuthenticator : IDirectoryAuthenticator
     {
@@ -49,6 +52,10 @@ namespace Vvf.Authentication.Dipvvf.Components
         // automatic fallback to a clear-text simple bind.
         private const ContextOptions BindOptions =
             ContextOptions.Negotiate | ContextOptions.Signing | ContextOptions.Sealing;
+
+        // Same guarantees for the DirectoryEntry used by the lookup.
+        private const AuthenticationTypes SearchAuthentication =
+            AuthenticationTypes.Secure | AuthenticationTypes.Signing | AuthenticationTypes.Sealing;
 
         private readonly string _domain;
 
@@ -85,25 +92,81 @@ namespace Vvf.Authentication.Dipvvf.Components
 
                 // Lookup with the user's own credentials: it does not depend on
                 // the read permissions of the application pool identity.
-                using (PrincipalContext userContext = new PrincipalContext(
-                    ContextType.Domain, _domain, null, BindOptions, userPrincipalName, password))
-                using (UserPrincipal user = UserPrincipal.FindByIdentity(
-                    userContext, IdentityType.UserPrincipalName, userPrincipalName))
-                {
-                    if (user == null || string.IsNullOrEmpty(user.SamAccountName))
-                    {
-                        Logger.Error("Credentials valid for '" + userPrincipalName + "' but the user could not be read from the directory.");
-                        return DirectoryAuthenticationResult.Failed(DirectoryAuthenticationStatus.InvalidCredentials);
-                    }
+                string samAccountName = FindSamAccountName(userPrincipalName, password);
 
-                    return new DirectoryAuthenticationResult(DirectoryAuthenticationStatus.Success, user.SamAccountName);
+                if (string.IsNullOrEmpty(samAccountName))
+                {
+                    Logger.Error("Credentials valid for '" + userPrincipalName + "' but the user could not be read from the directory.");
+                    return DirectoryAuthenticationResult.Failed(DirectoryAuthenticationStatus.InvalidCredentials);
                 }
+
+                return new DirectoryAuthenticationResult(DirectoryAuthenticationStatus.Success, samAccountName);
             }
             catch (PrincipalServerDownException ex)
             {
                 Logger.Error("Active Directory domain '" + _domain + "' is unreachable.", ex);
                 return DirectoryAuthenticationResult.Failed(DirectoryAuthenticationStatus.DirectoryUnavailable);
             }
+            catch (PrincipalOperationException ex)
+            {
+                Logger.Error("Active Directory error while authenticating '" + userPrincipalName + "'.", ex);
+                return DirectoryAuthenticationResult.Failed(DirectoryAuthenticationStatus.DirectoryUnavailable);
+            }
+            catch (DirectoryServicesCOMException ex)
+            {
+                Logger.Error("Active Directory error while reading '" + userPrincipalName + "' (0x" + ex.ErrorCode.ToString("X8") + ").", ex);
+                return DirectoryAuthenticationResult.Failed(DirectoryAuthenticationStatus.DirectoryUnavailable);
+            }
+        }
+
+        /// <summary>
+        /// Searches the Global Catalog of the forest for the user with the given
+        /// UPN and returns its sAMAccountName, or null if not found.
+        /// A plain LDAP search avoids PrincipalContext initialization, which
+        /// fails with 0x8007200A when created with user credentials.
+        /// </summary>
+        private string FindSamAccountName(string userPrincipalName, string password)
+        {
+            using (DirectoryEntry root = new DirectoryEntry("GC://" + _domain, userPrincipalName, password, SearchAuthentication))
+            using (DirectorySearcher searcher = new DirectorySearcher(root))
+            {
+                searcher.Filter = "(&(objectCategory=person)(objectClass=user)(userPrincipalName="
+                    + EscapeLdapFilterValue(userPrincipalName) + "))";
+                searcher.PropertiesToLoad.Add("sAMAccountName");
+                searcher.SearchScope = SearchScope.Subtree;
+
+                SearchResult result = searcher.FindOne();
+
+                if (result == null || result.Properties["sAMAccountName"].Count == 0)
+                {
+                    return null;
+                }
+
+                return Convert.ToString(result.Properties["sAMAccountName"][0]);
+            }
+        }
+
+        /// <summary>
+        /// Escapes the characters with a special meaning in an LDAP filter (RFC 4515).
+        /// </summary>
+        private static string EscapeLdapFilterValue(string value)
+        {
+            StringBuilder builder = new StringBuilder(value.Length);
+
+            foreach (char c in value)
+            {
+                switch (c)
+                {
+                    case '\\': builder.Append(@"\5c"); break;
+                    case '*': builder.Append(@"\2a"); break;
+                    case '(': builder.Append(@"\28"); break;
+                    case ')': builder.Append(@"\29"); break;
+                    case '\0': builder.Append(@"\00"); break;
+                    default: builder.Append(c); break;
+                }
+            }
+
+            return builder.ToString();
         }
 
         /// <summary>
