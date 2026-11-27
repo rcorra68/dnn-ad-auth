@@ -1,0 +1,22 @@
+# Default: Git decide se è testo e normalizza a LF nel repo
+* text=auto
+
+# File che DEVONO essere CRLF anche nel working copy
+*.sln       text eol=crlf
+*.csproj    text eol=crlf
+*.bat       text eol=crlf
+*.cmd       text eol=crlf
+*.ps1       text eol=crlf
+
+# File che DEVONO essere LF (se ne hai)
+*.sh        text eol=lf
+
+# Binari: nessuna conversione
+*.dll       binary
+*.exe       binary
+*.pdb       binary
+*.zip       binary
+*.png       binary
+*.jpg       binary
+*.gif       binary
+*.ico       binary

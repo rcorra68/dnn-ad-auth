@@ -1,0 +1,55 @@
+<dotnetnuke type="Package" version="5.0">
+  <packages>
+    <package name="__MODULE__" type="Auth_System" version="__VERSION__">
+      <friendlyName>__FRIENDLY_NAME__</friendlyName>
+      <description>__DESCRIPTION__</description>
+
+      <owner>
+        <name>__OWNER__</name>
+        <organization>__ORG__</organization>
+        <url>__URL__</url>
+        <email>__EMAIL__</email>
+      </owner>
+
+      <license src="Documentation/License.txt"></license>
+      <releaseNotes src="Documentation/ReleaseNotes.html"></releaseNotes>
+
+      <dependencies>
+        <dependency type="CoreVersion">__CORE__</dependency>
+        __OTHER_DEPS__
+      </dependencies>
+
+      <components>
+
+        <component type="AuthenticationSystem">
+          <authenticationService>
+            <type>__AUTH_TYPE__</type>
+            <settingsControlSrc>__SETTINGS_SRC__</settingsControlSrc>
+            <loginControlSrc>__LOGIN_SRC__</loginControlSrc>
+            <logoffControlSrc>__LOGOFF_SRC__</logoffControlSrc>
+          </authenticationService>
+        </component>
+
+        <component type="Assembly">
+          <assemblies>
+            __ASSEMBLIES__
+          </assemblies>
+        </component>
+
+        <component type="ResourceFile">
+          <resourceFiles>
+            <basePath>__AUTH_BASEPATH__</basePath>
+            <resourceFile>
+              <name>resources.zip</name>
+            </resourceFile>
+          </resourceFiles>
+        </component>
+
+        __CLEANUP__
+
+        __CONFIG__
+
+      </components>
+    </package>
+  </packages>
+</dotnetnuke>
