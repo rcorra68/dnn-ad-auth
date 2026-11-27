@@ -190,7 +190,7 @@ namespace Vvf.Auth.Dipvvf.Providers.ADSIProvider
                 _processLog += exc.Message + "<br>";
                 Exceptions.LogException(exc);
                 // Nothing to do if we could not access Global Catalog, so return
-                //return;
+                // return;
             }
 
             // Also check if LDAP fully accessible

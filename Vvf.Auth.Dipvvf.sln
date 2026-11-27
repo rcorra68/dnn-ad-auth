@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.37627.13
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Vvf.Auth.Dipvvf", "src\Vvf.Auth.Dipvvf\Vvf.Auth.Dipvvf.csproj", "{89975073-0072-42AA-902B-31EBE7B21526}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Vvf.Authentication.Dipvvf", "src\Vvf.Authentication.Dipvvf\Vvf.Authentication.Dipvvf.csproj", "{B0406AF8-1C95-4EDC-A11C-88FE08D8E254}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -11,10 +11,10 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{89975073-0072-42AA-902B-31EBE7B21526}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{89975073-0072-42AA-902B-31EBE7B21526}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{89975073-0072-42AA-902B-31EBE7B21526}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{89975073-0072-42AA-902B-31EBE7B21526}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B0406AF8-1C95-4EDC-A11C-88FE08D8E254}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B0406AF8-1C95-4EDC-A11C-88FE08D8E254}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B0406AF8-1C95-4EDC-A11C-88FE08D8E254}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B0406AF8-1C95-4EDC-A11C-88FE08D8E254}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
