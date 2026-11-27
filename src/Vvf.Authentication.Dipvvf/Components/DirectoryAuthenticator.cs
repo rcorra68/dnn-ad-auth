@@ -1,8 +1,10 @@
 namespace Vvf.Authentication.Dipvvf.Components
 {
     using System;
+    using System.DirectoryServices;
     using System.DirectoryServices.AccountManagement;
     using System.Runtime.InteropServices;
+    using System.Text;
     using DotNetNuke.Instrumentation;
 
     public enum DirectoryAuthenticationStatus
@@ -61,6 +63,10 @@ namespace Vvf.Authentication.Dipvvf.Components
         private const ContextOptions BindOptions =
             ContextOptions.Negotiate | ContextOptions.Signing | ContextOptions.Sealing;
 
+        // Same guarantees for the DirectoryEntry used by the lookup.
+        private const AuthenticationTypes SearchAuthentication =
+            AuthenticationTypes.Secure | AuthenticationTypes.Signing | AuthenticationTypes.Sealing;
+
         private readonly string _domain;
 
         public DirectoryAuthenticator(string domain)
@@ -86,25 +92,25 @@ namespace Vvf.Authentication.Dipvvf.Components
 
             try
             {
-                // The context binds with the application pool identity (on a
-                // domain-joined server: the computer account, which can read AD).
+                // ValidateCredentials only binds as the user: it never runs the
+                // PrincipalContext initialization that fails here with 0x8007200A.
                 using (PrincipalContext context = new PrincipalContext(ContextType.Domain, _domain))
                 {
                     if (!context.ValidateCredentials(userPrincipalName, password, BindOptions))
                     {
                         return DirectoryAuthenticationResult.Failed(DirectoryAuthenticationStatus.InvalidCredentials);
                     }
-
-                    DirectoryAuthenticationResult result = FindUser(context, userPrincipalName);
-
-                    if (result == null)
-                    {
-                        Logger.Error("Credentials valid for '" + userPrincipalName + "' but the user could not be read from the directory.");
-                        return DirectoryAuthenticationResult.Failed(DirectoryAuthenticationStatus.InvalidCredentials);
-                    }
-
-                    return result;
                 }
+
+                DirectoryAuthenticationResult result = FindUser(userPrincipalName);
+
+                if (result == null)
+                {
+                    Logger.Error("Credentials valid for '" + userPrincipalName + "' but the user could not be read from the directory.");
+                    return DirectoryAuthenticationResult.Failed(DirectoryAuthenticationStatus.InvalidCredentials);
+                }
+
+                return result;
             }
             catch (PrincipalServerDownException ex)
             {
@@ -126,24 +132,73 @@ namespace Vvf.Authentication.Dipvvf.Components
 
         /// <summary>
         /// Reads sAMAccountName and profile of the user with the given UPN,
-        /// or returns null if the user is not found.
+        /// or returns null if the user is not found. Plain LDAP search with the
+        /// application pool identity (on a domain-joined server: the computer
+        /// account): unlike PrincipalContext it does not read the schema.
         /// </summary>
-        private static DirectoryAuthenticationResult FindUser(PrincipalContext context, string userPrincipalName)
+        private DirectoryAuthenticationResult FindUser(string userPrincipalName)
         {
-            using (UserPrincipal user = UserPrincipal.FindByIdentity(context, IdentityType.UserPrincipalName, userPrincipalName))
+            using (DirectoryEntry root = new DirectoryEntry("LDAP://" + _domain, null, null, SearchAuthentication))
+            using (DirectorySearcher searcher = new DirectorySearcher(root))
             {
-                if (user == null || string.IsNullOrEmpty(user.SamAccountName))
+                searcher.Filter = "(&(objectCategory=person)(objectClass=user)(userPrincipalName="
+                    + EscapeLdapFilterValue(userPrincipalName) + "))";
+                searcher.SearchScope = SearchScope.Subtree;
+                searcher.PropertiesToLoad.Add("sAMAccountName");
+                searcher.PropertiesToLoad.Add("givenName");
+                searcher.PropertiesToLoad.Add("sn");
+                searcher.PropertiesToLoad.Add("displayName");
+                searcher.PropertiesToLoad.Add("mail");
+
+                SearchResult found = searcher.FindOne();
+
+                string samAccountName = GetProperty(found, "sAMAccountName");
+
+                if (string.IsNullOrEmpty(samAccountName))
                 {
                     return null;
                 }
 
-                DirectoryAuthenticationResult result = new DirectoryAuthenticationResult(DirectoryAuthenticationStatus.Success, user.SamAccountName);
-                result.FirstName = user.GivenName ?? string.Empty;
-                result.LastName = user.Surname ?? string.Empty;
-                result.DisplayName = user.DisplayName ?? string.Empty;
-                result.Email = user.EmailAddress ?? string.Empty;
+                DirectoryAuthenticationResult result = new DirectoryAuthenticationResult(DirectoryAuthenticationStatus.Success, samAccountName);
+                result.FirstName = GetProperty(found, "givenName");
+                result.LastName = GetProperty(found, "sn");
+                result.DisplayName = GetProperty(found, "displayName");
+                result.Email = GetProperty(found, "mail");
                 return result;
             }
+        }
+
+        private static string GetProperty(SearchResult result, string name)
+        {
+            if (result == null || !result.Properties.Contains(name) || result.Properties[name].Count == 0)
+            {
+                return string.Empty;
+            }
+
+            return Convert.ToString(result.Properties[name][0]);
+        }
+
+        /// <summary>
+        /// Escapes the characters with a special meaning in an LDAP filter (RFC 4515).
+        /// </summary>
+        private static string EscapeLdapFilterValue(string value)
+        {
+            StringBuilder builder = new StringBuilder(value.Length);
+
+            foreach (char c in value)
+            {
+                switch (c)
+                {
+                    case '\\': builder.Append(@"\5c"); break;
+                    case '*': builder.Append(@"\2a"); break;
+                    case '(': builder.Append(@"\28"); break;
+                    case ')': builder.Append(@"\29"); break;
+                    case '\0': builder.Append(@"\00"); break;
+                    default: builder.Append(c); break;
+                }
+            }
+
+            return builder.ToString();
         }
 
         /// <summary>
