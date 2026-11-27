@@ -38,6 +38,9 @@ namespace Vvf.Authentication.Dipvvf.Components
 
         public string Email { get; set; }
 
+        /// <summary>userPrincipalName as stored in AD (e.g. nome1.cognome@dipvvf.it).</summary>
+        public string UserPrincipalName { get; set; }
+
         public static DirectoryAuthenticationResult Failed(DirectoryAuthenticationStatus status)
         {
             return new DirectoryAuthenticationResult(status, null);
@@ -149,6 +152,7 @@ namespace Vvf.Authentication.Dipvvf.Components
                 searcher.PropertiesToLoad.Add("sn");
                 searcher.PropertiesToLoad.Add("displayName");
                 searcher.PropertiesToLoad.Add("mail");
+                searcher.PropertiesToLoad.Add("userPrincipalName");
 
                 SearchResult found = searcher.FindOne();
 
@@ -164,6 +168,7 @@ namespace Vvf.Authentication.Dipvvf.Components
                 result.LastName = GetProperty(found, "sn");
                 result.DisplayName = GetProperty(found, "displayName");
                 result.Email = GetProperty(found, "mail");
+                result.UserPrincipalName = GetProperty(found, "userPrincipalName");
                 return result;
             }
         }

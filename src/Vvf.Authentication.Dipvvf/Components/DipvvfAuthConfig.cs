@@ -15,6 +15,15 @@ namespace Vvf.Authentication.Dipvvf.Components
         /// </summary>
         public const string DnnUsernamePrefix = @"DIPVVF\";
 
+        /// <summary>Preferred locale of users created on first login.</summary>
+        public const string NewUserLocale = "it-IT";
+
+        /// <summary>
+        /// Preferred time zone of users created on first login: Windows id of
+        /// Rome (CET/CEST, with daylight saving time).
+        /// </summary>
+        public const string NewUserTimeZoneId = "W. Europe Standard Time";
+
         private const string SettingPrefix = "DipvvfAuth_";
         private const string EnabledKey = SettingPrefix + "Enabled";
         private const string DomainKey = SettingPrefix + "Domain";

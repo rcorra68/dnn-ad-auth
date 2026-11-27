@@ -138,19 +138,27 @@ namespace Vvf.Authentication.Dipvvf
             UserInfo user = new UserInfo();
             user.PortalID = PortalId;
             user.Username = dnnUsername;
+            user.Profile.InitialiseProfile(PortalId);
+
             user.FirstName = directoryUser.FirstName;
             user.LastName = directoryUser.LastName;
-            user.DisplayName = !string.IsNullOrEmpty(directoryUser.DisplayName)
-                ? directoryUser.DisplayName
-                : (directoryUser.FirstName + " " + directoryUser.LastName).Trim();
-            user.Email = !string.IsNullOrEmpty(directoryUser.Email)
-                ? directoryUser.Email
-                : accountName + "@" + Config.Domain;
+            user.Profile.FirstName = directoryUser.FirstName;
+            user.Profile.LastName = directoryUser.LastName;
 
+            // Display name: the UPN prefix from AD (nome.cognome, or nome1.cognome
+            // for homonyms), which is what users know each other by.
+            user.DisplayName = GetUpnPrefix(directoryUser.UserPrincipalName);
             if (string.IsNullOrEmpty(user.DisplayName))
             {
                 user.DisplayName = accountName;
             }
+
+            user.Email = !string.IsNullOrEmpty(directoryUser.Email)
+                ? directoryUser.Email
+                : accountName + "@" + Config.Domain;
+
+            user.Profile.PreferredLocale = DipvvfAuthConfig.NewUserLocale;
+            user.Profile.PreferredTimeZone = GetNewUserTimeZone();
 
             user.Membership.Password = Guid.NewGuid().ToString("N") + "Aa1!";
             user.Membership.Approved = true;
@@ -165,6 +173,31 @@ namespace Vvf.Authentication.Dipvvf
 
             Logger.Info("Created DNN user '" + dnnUsername + "' for '" + accountName + "' in portal " + PortalId + ".");
             return user;
+        }
+
+        private static string GetUpnPrefix(string userPrincipalName)
+        {
+            if (string.IsNullOrEmpty(userPrincipalName))
+            {
+                return string.Empty;
+            }
+
+            int atIndex = userPrincipalName.IndexOf('@');
+            string prefix = atIndex >= 0 ? userPrincipalName.Substring(0, atIndex) : userPrincipalName;
+            return prefix.Trim().ToLowerInvariant();
+        }
+
+        private static TimeZoneInfo GetNewUserTimeZone()
+        {
+            try
+            {
+                return TimeZoneInfo.FindSystemTimeZoneById(DipvvfAuthConfig.NewUserTimeZoneId);
+            }
+            catch (TimeZoneNotFoundException)
+            {
+                Logger.Warn("Time zone '" + DipvvfAuthConfig.NewUserTimeZoneId + "' not found: server time zone used for new users.");
+                return TimeZoneInfo.Local;
+            }
         }
 
         private void RaiseLoginFailure(string accountName)
