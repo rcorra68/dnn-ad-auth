@@ -14,5 +14,7 @@ namespace Vvf.Authentication.Dipvvf
         protected global::System.Web.UI.WebControls.CheckBox chkEnabled;
         protected global::System.Web.UI.WebControls.Label lblDomainName;
         protected global::System.Web.UI.WebControls.TextBox txtDomain;
+        protected global::System.Web.UI.WebControls.Label lblAutoCreateUsers;
+        protected global::System.Web.UI.WebControls.CheckBox chkAutoCreateUsers;
     }
 }

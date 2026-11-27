@@ -28,6 +28,15 @@ namespace Vvf.Authentication.Dipvvf.Components
         /// </summary>
         public string SamAccountName { get; private set; }
 
+        /// <summary>Directory attributes, filled only when Status is Success.</summary>
+        public string FirstName { get; set; }
+
+        public string LastName { get; set; }
+
+        public string DisplayName { get; set; }
+
+        public string Email { get; set; }
+
         public static DirectoryAuthenticationResult Failed(DirectoryAuthenticationStatus status)
         {
             return new DirectoryAuthenticationResult(status, null);
@@ -92,15 +101,15 @@ namespace Vvf.Authentication.Dipvvf.Components
 
                 // Lookup with the user's own credentials: it does not depend on
                 // the read permissions of the application pool identity.
-                string samAccountName = FindSamAccountName(userPrincipalName, password);
+                DirectoryAuthenticationResult result = FindUser(userPrincipalName, password);
 
-                if (string.IsNullOrEmpty(samAccountName))
+                if (result == null)
                 {
                     Logger.Error("Credentials valid for '" + userPrincipalName + "' but the user could not be read from the directory.");
                     return DirectoryAuthenticationResult.Failed(DirectoryAuthenticationStatus.InvalidCredentials);
                 }
 
-                return new DirectoryAuthenticationResult(DirectoryAuthenticationStatus.Success, samAccountName);
+                return result;
             }
             catch (PrincipalServerDownException ex)
             {
@@ -121,11 +130,11 @@ namespace Vvf.Authentication.Dipvvf.Components
 
         /// <summary>
         /// Searches the Global Catalog of the forest for the user with the given
-        /// UPN and returns its sAMAccountName, or null if not found.
+        /// UPN and returns its sAMAccountName and profile, or null if not found.
         /// A plain LDAP search avoids PrincipalContext initialization, which
         /// fails with 0x8007200A when created with user credentials.
         /// </summary>
-        private string FindSamAccountName(string userPrincipalName, string password)
+        private DirectoryAuthenticationResult FindUser(string userPrincipalName, string password)
         {
             using (DirectoryEntry root = new DirectoryEntry("GC://" + _domain, userPrincipalName, password, SearchAuthentication))
             using (DirectorySearcher searcher = new DirectorySearcher(root))
@@ -133,17 +142,38 @@ namespace Vvf.Authentication.Dipvvf.Components
                 searcher.Filter = "(&(objectCategory=person)(objectClass=user)(userPrincipalName="
                     + EscapeLdapFilterValue(userPrincipalName) + "))";
                 searcher.PropertiesToLoad.Add("sAMAccountName");
+                searcher.PropertiesToLoad.Add("givenName");
+                searcher.PropertiesToLoad.Add("sn");
+                searcher.PropertiesToLoad.Add("displayName");
+                searcher.PropertiesToLoad.Add("mail");
                 searcher.SearchScope = SearchScope.Subtree;
 
                 SearchResult result = searcher.FindOne();
 
-                if (result == null || result.Properties["sAMAccountName"].Count == 0)
+                string samAccountName = GetProperty(result, "sAMAccountName");
+
+                if (string.IsNullOrEmpty(samAccountName))
                 {
                     return null;
                 }
 
-                return Convert.ToString(result.Properties["sAMAccountName"][0]);
+                DirectoryAuthenticationResult user = new DirectoryAuthenticationResult(DirectoryAuthenticationStatus.Success, samAccountName);
+                user.FirstName = GetProperty(result, "givenName");
+                user.LastName = GetProperty(result, "sn");
+                user.DisplayName = GetProperty(result, "displayName");
+                user.Email = GetProperty(result, "mail");
+                return user;
             }
+        }
+
+        private static string GetProperty(SearchResult result, string name)
+        {
+            if (result == null || !result.Properties.Contains(name) || result.Properties[name].Count == 0)
+            {
+                return string.Empty;
+            }
+
+            return Convert.ToString(result.Properties[name][0]);
         }
 
         /// <summary>

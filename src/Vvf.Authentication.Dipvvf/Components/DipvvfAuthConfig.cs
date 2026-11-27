@@ -18,6 +18,7 @@ namespace Vvf.Authentication.Dipvvf.Components
         private const string SettingPrefix = "DipvvfAuth_";
         private const string EnabledKey = SettingPrefix + "Enabled";
         private const string DomainKey = SettingPrefix + "Domain";
+        private const string AutoCreateUsersKey = SettingPrefix + "AutoCreateUsers";
 
         public int PortalId { get; private set; }
 
@@ -29,12 +30,19 @@ namespace Vvf.Authentication.Dipvvf.Components
         /// </summary>
         public string Domain { get; set; }
 
+        /// <summary>
+        /// When true, a missing DNN user is created on the first successful
+        /// Active Directory login. When false, the account must already exist.
+        /// </summary>
+        public bool AutoCreateUsers { get; set; }
+
         public static DipvvfAuthConfig GetConfig(int portalId)
         {
             DipvvfAuthConfig config = new DipvvfAuthConfig();
             config.PortalId = portalId;
             config.Enabled = PortalController.GetPortalSettingAsBoolean(EnabledKey, portalId, false);
             config.Domain = PortalController.GetPortalSetting(DomainKey, portalId, DefaultDomain);
+            config.AutoCreateUsers = PortalController.GetPortalSettingAsBoolean(AutoCreateUsersKey, portalId, true);
             return config;
         }
 
@@ -42,6 +50,7 @@ namespace Vvf.Authentication.Dipvvf.Components
         {
             PortalController.UpdatePortalSetting(config.PortalId, EnabledKey, config.Enabled.ToString());
             PortalController.UpdatePortalSetting(config.PortalId, DomainKey, config.Domain);
+            PortalController.UpdatePortalSetting(config.PortalId, AutoCreateUsersKey, config.AutoCreateUsers.ToString());
         }
     }
 }

@@ -21,4 +21,7 @@
   <data name="Domain.Text" xml:space="preserve">
     <value>Dominio</value>
   </data>
+  <data name="AutoCreateUsers.Text" xml:space="preserve">
+    <value>Crea utenti al primo accesso</value>
+  </data>
 </root>

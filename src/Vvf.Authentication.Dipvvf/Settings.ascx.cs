@@ -18,6 +18,7 @@ namespace Vvf.Authentication.Dipvvf
                 DipvvfAuthConfig config = DipvvfAuthConfig.GetConfig(PortalId);
                 chkEnabled.Checked = config.Enabled;
                 txtDomain.Text = config.Domain;
+                chkAutoCreateUsers.Checked = config.AutoCreateUsers;
             }
         }
 
@@ -29,6 +30,7 @@ namespace Vvf.Authentication.Dipvvf
 
             config.Enabled = chkEnabled.Checked;
             config.Domain = domain.Length > 0 ? domain : DipvvfAuthConfig.DefaultDomain;
+            config.AutoCreateUsers = chkAutoCreateUsers.Checked;
 
             DipvvfAuthConfig.UpdateConfig(config);
         }

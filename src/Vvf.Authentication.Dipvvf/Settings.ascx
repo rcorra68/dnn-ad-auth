@@ -12,4 +12,9 @@
         <asp:TextBox ID="txtDomain" runat="server" />
     </div>
 
+    <div class="dnnFormItem">
+        <asp:Label ID="lblAutoCreateUsers" runat="server" AssociatedControlID="chkAutoCreateUsers" resourcekey="AutoCreateUsers" CssClass="dnnFormLabel" />
+        <asp:CheckBox ID="chkAutoCreateUsers" runat="server" />
+    </div>
+
 </div>
