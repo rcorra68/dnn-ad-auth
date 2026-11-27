@@ -2,6 +2,8 @@
     [string]$Version
 )
 
+$ErrorActionPreference = "Stop"
+
 $repoRoot = Split-Path $PSScriptRoot -Parent
 [string]$ConfigPath = Join-Path $repoRoot "package.config.psd1"
 
@@ -30,6 +32,8 @@ $paths = Build-Paths $config $Version
 $dlls = Copy-Dlls -Paths $paths -Config $config
 $providers = Copy-Providers -Paths $paths
 Copy-Documentations -Paths $paths
-Copy-Resources -Paths $paths
+Copy-Resources -Paths $paths -Config $config
 Build-Manifest -Paths $paths -Config $config -Version $Version -Dlls $Dlls -Providers $Providers
 New-ZipPackage -Paths $paths
+
+Write-Ok "Package created: $($paths.ZipPath)"

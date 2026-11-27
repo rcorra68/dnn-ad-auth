@@ -20,7 +20,11 @@ function Copy-Dlls {
         New-Item -ItemType Directory -Path $destinationPath -Force | Out-Null
     }
 
-    $dlls = Get-ChildItem $Paths.SrcDllPath -Filter "*.dll" -ErrorAction SilentlyContinue
+    if (-not (Test-Path -Path $Paths.SrcDllPath)) {
+        throw "Build output not found: $($Paths.SrcDllPath). Run 'task build' first."
+    }
+
+    $dlls = Get-ChildItem $Paths.SrcDllPath -Filter "*.dll"
 
     $filteredDlls = $dlls | Where-Object {
         $name = $_.Name
@@ -46,5 +50,9 @@ function Copy-Dlls {
         $result += $dll.Name
     }
     
+    if ($result.Count -eq 0) {
+        throw "No DLLs to package in $($Paths.SrcDllPath)"
+    }
+
     return $result
 }

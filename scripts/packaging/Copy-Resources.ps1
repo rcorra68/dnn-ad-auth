@@ -1,5 +1,11 @@
 function Copy-Resources {
-    param($Paths)
+    param($Paths, $Config)
+
+    if (-not (Test-Path $Paths.ModuleSource)) {
+        throw "Module source not found: $($Paths.ModuleSource)"
+    }
+
+    $extensions = if ($Config -and $Config.ResourceExtensions) { @($Config.ResourceExtensions) } else { @(".ascx", ".resx") }
 
     Write-Step("Building resource files...")
 
@@ -31,10 +37,14 @@ function Copy-Resources {
     }
 
     #
-    # 2. Copy ASCX + RESX outside known folders
+    # 2. Copy files with the configured extensions outside known folders
+    #    (bin/obj excluded)
     #
     Get-ChildItem $Paths.ModuleSource -Recurse -File |
-    Where-Object { $_.Extension -in ".ascx",".resx" } |
+    Where-Object {
+        $_.Extension -in $extensions -and
+        $_.FullName -notmatch "[\\/](bin|obj)[\\/]"
+    } |
     ForEach-Object {
 
         if ($copied.ContainsKey($_.FullName)) {
@@ -42,12 +52,12 @@ function Copy-Resources {
         }
 
         foreach ($folder in $resourceFolders) {
-            if ($_.FullName -match "\\$folder\\") {
+            if ($_.FullName -match "[\\/]$folder[\\/]") {
                 return
             }
         }
 
-        $relative = $_.FullName.Substring($Paths.ModuleSource.Length).TrimStart('\')
+        $relative = $_.FullName.Substring($Paths.ModuleSource.Length).TrimStart('\', '/')
         $target = Join-Path $Paths.ResourcesTemp $relative
 
         $dir = Split-Path $target -Parent

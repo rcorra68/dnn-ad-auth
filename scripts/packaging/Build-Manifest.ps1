@@ -10,6 +10,7 @@ function Build-Manifest {
     $manifest = @{
         Version       = $Version
         Module        = $Config.PackageName
+        FriendlyName  = if ($Config.FriendlyName) { $Config.FriendlyName } else { $Config.PackageName }
         Description   = $Config.Description
         Owner         = $Config.Owner
         Organization  = $Config.Organization
@@ -17,10 +18,18 @@ function Build-Manifest {
         Email         = $Config.Email
         CoreVersion   = $Config.CoreVersion
 
+        BasePath      = $Paths.InstallBasePath -replace "/", "\"
+
         AssembliesXml = Get-DllSection $Dlls
-        ScriptsXml    = Get-ScriptsSection $Config $Providers
-        ModulesXml    = Get-ModuleSection $Config
+        ScriptsXml    = Get-ScriptsSection $Paths $Providers
+        ModulesXml    = ""
+        Auth          = @{}
         OtherDepsXml  = Get-DependenciesSection $Config
+    }
+
+    switch ($Paths.PackageType) {
+        "Module"      { $manifest.ModulesXml = Get-ModuleSection $Config }
+        "Auth_System" { $manifest.Auth       = Get-AuthenticationValues $Config $Paths }
     }
 
     # =========================
@@ -28,8 +37,7 @@ function Build-Manifest {
     # =========================
 
     if (!(Test-Path $Paths.ManifestTemplatePath)) {
-        Write-Error "Template manifest non trovato: $($Paths.ManifestTemplatePath)"
-        return
+        throw "Template manifest non trovato: $($Paths.ManifestTemplatePath)"
     }
 
     $template = Get-Content $Paths.ManifestTemplatePath -Raw
@@ -37,20 +45,41 @@ function Build-Manifest {
     # =========================
     # RENDER TEMPLATE
     # =========================
-    $output = $template `
-        -replace "__VERSION__",      $manifest.Version `
-        -replace "__MODULE__",       $manifest.Module `
-        -replace "__DESCRIPTION__",  $manifest.Description `
-        -replace "__OWNER__",        $manifest.Owner `
-        -replace "__ORG__",          $manifest.Organization `
-        -replace "__URL__",          $manifest.Url `
-        -replace "__EMAIL__",        $manifest.Email `
-        -replace "__ASSEMBLIES__",   $manifest.AssembliesXml `
-        -replace "__SCRIPTS__",      $manifest.ScriptsXml `
-        -replace "__MODULES__",      $manifest.ModulesXml `
-        -replace "__CORE__",         $manifest.CoreVersion `
-        -replace "__OTHER_DEPS__",   $manifest.OtherDepsXml
+    # Plain string replacement (no regex): values may contain '$' or '\'
+    $tokens = [ordered]@{
+        "__VERSION__"           = $manifest.Version
+        "__MODULE__"            = $manifest.Module
+        "__FRIENDLYNAME__"      = $manifest.FriendlyName
+        "__DESCRIPTION__"       = $manifest.Description
+        "__OWNER__"             = $manifest.Owner
+        "__ORG__"               = $manifest.Organization
+        "__URL__"               = $manifest.Url
+        "__EMAIL__"             = $manifest.Email
+        "__BASEPATH__"          = $manifest.BasePath
+        "__ASSEMBLIES__"        = $manifest.AssembliesXml
+        "__SCRIPTS_COMPONENT__" = $manifest.ScriptsXml
+        "__MODULES__"           = $manifest.ModulesXml
+        "__FRIENDLY_NAME__"     = $manifest.FriendlyName
+        "__AUTH_TYPE__"         = $manifest.Auth.Type
+        "__AUTH_BASEPATH__"     = $manifest.Auth.BasePath
+        "__SETTINGS_SRC__"      = $manifest.Auth.SettingsSrc
+        "__LOGIN_SRC__"         = $manifest.Auth.LoginSrc
+        "__LOGOFF_SRC__"        = $manifest.Auth.LogoffSrc
+        # Optional fragments, not used yet
+        "__CLEANUP__"           = ""
+        "__CONFIG__"            = ""
+        "__CORE__"              = $manifest.CoreVersion
+        "__OTHER_DEPS__"        = $manifest.OtherDepsXml
+    }
 
+    $output = $template
+    foreach ($token in $tokens.Keys) {
+        $output = $output.Replace($token, [string]$tokens[$token])
+    }
+
+    if ($output -match "__[A-Z_]+__") {
+        throw "Unreplaced placeholder in manifest: $($Matches[0])"
+    }
 
     # =========================
     # XML FORMAT & OUTPUT
@@ -86,9 +115,17 @@ function Get-DllSection($Dlls) {
     }) -join "`n"
 }
 
-function Get-ScriptsSection($Config, $Providers) {
+function Get-ScriptsSection($Paths, $Providers) {
 
     Write-Deploy "Building scripts section..."
+
+    $Providers = @($Providers | Where-Object { $_ })
+
+    # No SQL scripts → no Script component at all
+    if ($Providers.Count -eq 0) {
+        Write-Deploy "No SQL scripts: Script component omitted"
+        return ""
+    }
 
     $installScripts = $Providers | Where-Object { $_ -notlike "Uninstall*" }
     $uninstallScript = $Providers | Where-Object { $_ -like "Uninstall*" }
@@ -127,12 +164,16 @@ function Get-ScriptsSection($Config, $Providers) {
 "@
     }
 
+    $basePath = $Paths.InstallBasePath -replace "/", "\"
+
     return @"
+<component type="Script">
 <scripts>
-  <basePath>DesktopModules\$($Config.PackageName)</basePath>
+  <basePath>$basePath</basePath>
 $installXml
 $uninstallXml
 </scripts>
+</component>
 "@
 }
 
@@ -233,4 +274,28 @@ function Get-DependenciesSection($Config) {
         }
 
     }) -join "`n  "
+}
+
+function Get-AuthenticationValues($Config, $Paths) {
+
+    Write-Deploy "Building authentication section..."
+
+    $auth = $Config.Auth
+
+    if (-not $auth.Type) {
+        throw "Auth.Type missing in package.config.psd1"
+    }
+    if (-not $auth.LoginControl) {
+        throw "Auth.LoginControl missing in package.config.psd1"
+    }
+
+    $base = $Paths.InstallBasePath
+
+    return @{
+        Type        = $auth.Type
+        BasePath    = $base -replace "/", "\"
+        LoginSrc    = "$base/$($auth.LoginControl)"
+        SettingsSrc = if ($auth.SettingsControl) { "$base/$($auth.SettingsControl)" } else { "" }
+        LogoffSrc   = if ($auth.LogoffControl)   { "$base/$($auth.LogoffControl)" }   else { "" }
+    }
 }

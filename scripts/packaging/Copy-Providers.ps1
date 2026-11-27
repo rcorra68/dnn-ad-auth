@@ -3,15 +3,15 @@ function Copy-Providers {
 
     Write-Step "Copying Providers to the Providers folder..."
 
-    # Path validation: Check if source exists
+    # SQL scripts are optional (e.g. authentication providers have none)
     if (-not (Test-Path -Path $Paths.SrcProviderPath)) {
-        Write-Error "Source path '$($Paths.SrcProviderPath)' not found."
-        return
+        Write-Deploy "No SqlDataProvider folder: skipped"
+        return @()
     }
 
     $excludePatterns = @()
 
-    $destinationPath = Join-Path -Path $Paths.DnnFolder -ChildPath "Providers\DataProviders\SqlDataProvider"
+    $destinationPath = Join-Path -Path $Paths.DnnFolder -ChildPath "Providers/DataProviders/SqlDataProvider"
 
     if (-not (Test-Path -Path $destinationPath)) {
         New-Item -ItemType Directory -Path $destinationPath -Force | Out-Null
@@ -24,7 +24,7 @@ function Copy-Providers {
 
     if ($null -eq $providers) {
         Write-Warning "No .SqlDataProvider files found in source."
-        return
+        return @()
     }
 
     $filteredProviders = $providers | Where-Object {

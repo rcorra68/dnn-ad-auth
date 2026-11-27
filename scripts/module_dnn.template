@@ -22,9 +22,7 @@
 
       <components>
       
-        <component type="Script">
-          __SCRIPTS__
-        </component>  
+        __SCRIPTS_COMPONENT__
 
         <component type="ResourceFile">
           <resourceFiles>
